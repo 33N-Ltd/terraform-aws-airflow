@@ -150,7 +150,7 @@ resource "aws_instance" "airflow_webserver" {
   subnet_id = coalesce("${var.instance_subnet_id}", "${tolist(data.aws_subnet_ids.selected.ids)[count.index]}")
   iam_instance_profile = "${module.ami_instance_profile.instance_profile_name}"
 
-  associate_public_ip_address = true
+  associate_public_ip_address = "${var.associate_public_ips}"
 
   volume_tags = "${module.airflow_labels_webserver.tags}"
 
@@ -244,7 +244,7 @@ resource "aws_instance" "airflow_scheduler" {
   subnet_id = coalesce("${var.instance_subnet_id}", "${tolist(data.aws_subnet_ids.selected.ids)[count.index]}")
   iam_instance_profile = "${module.ami_instance_profile.instance_profile_name}"
 
-  associate_public_ip_address = true
+  associate_public_ip_address = "${var.associate_public_ips}"
 
   volume_tags = "${module.airflow_labels_webserver.tags}"
 
@@ -338,7 +338,7 @@ resource "aws_instance" "airflow_worker" {
   subnet_id = coalesce("${var.instance_subnet_id}", "${tolist(data.aws_subnet_ids.selected.ids)[count.index]}")
   iam_instance_profile = "${module.ami_instance_profile.instance_profile_name}"
 
-  associate_public_ip_address = true
+  associate_public_ip_address = "${var.associate_public_ips}"
 
   volume_tags = "${module.airflow_labels_webserver.tags}"
 

@@ -269,6 +269,13 @@ variable "db_subnet_group_name" {
   default     = ""
 }
 
+
+variable "associate_public_ips" {
+  description = "Assign public IPs to airflow EC-2 instances"
+  type = "string"
+  default = true
+}
+
 #------------------------------------------------------------
 # Data sources
 #------------------------------------------------------------
