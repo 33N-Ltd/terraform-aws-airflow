@@ -1,2 +1,2 @@
 # Fix CR from checking out on windows ending up in environment variables
-files/.env* eol=lf
+*.env.* eol=lf
