@@ -11,7 +11,7 @@ terraform {
 # ---------------------------------------
 
 module "airflow_labels" {
-  source    = "git::https://github.com/cloudposse/terraform-terraform-label.git?ref=0.2.1"
+  source    = "git::https://github.com/cloudposse/terraform-terraform-label.git?ref=tags/0.4.0"
   namespace = "${var.cluster_name}"
   stage     = "${var.cluster_stage}"
   name      = "airflow"
@@ -20,8 +20,7 @@ module "airflow_labels" {
 }
 
 module "airflow_labels_scheduler" {
-
-  source     = "git::https://github.com/cloudposse/terraform-terraform-label.git?ref=0.2.1"
+  source     = "git::https://github.com/cloudposse/terraform-terraform-label.git?ref=tags/0.4.0"
   namespace  = "${var.cluster_name}"
   stage      = "${var.cluster_stage}"
   name       = "airflow"
@@ -31,7 +30,7 @@ module "airflow_labels_scheduler" {
 }
 
 module "airflow_labels_webserver" {
-  source     = "git::https://github.com/cloudposse/terraform-terraform-label.git?ref=0.2.1"
+  source     = "git::https://github.com/cloudposse/terraform-terraform-label.git?ref=tags/0.4.0"
   namespace  = "${var.cluster_name}"
   stage      = "${var.cluster_stage}"
   name       = "airflow"
@@ -41,7 +40,7 @@ module "airflow_labels_webserver" {
 }
 
 module "airflow_labels_worker" {
-  source     = "git::https://github.com/cloudposse/terraform-terraform-label.git?ref=0.2.1"
+  source     = "git::https://github.com/cloudposse/terraform-terraform-label.git?ref=tags/0.4.0"
   namespace  = "${var.cluster_name}"
   stage      = "${var.cluster_stage}"
   name       = "airflow"
@@ -127,7 +126,7 @@ POLICY
 
 module "sg_airflow" {
   source = "terraform-aws-modules/security-group/aws"
-  version = "v2.17.0"
+  version = "3.1.0"
   name = "${module.airflow_labels.id}-sg"
   description = "Security group for ${module.airflow_labels.id} machines"
   vpc_id = "${data.aws_vpc.default.id}"
@@ -433,7 +432,6 @@ resource "aws_instance" "airflow_worker" {
 
 module "sg_database" {
   source = "terraform-aws-modules/security-group/aws"
-  version = "v2.17.0"
   name = "${module.airflow_labels.id}-database-sg"
   description = "Security group for ${module.airflow_labels.id} database"
   vpc_id = "${data.aws_vpc.default.id}"
