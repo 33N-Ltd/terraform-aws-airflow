@@ -1,12 +1,3 @@
-# ---------------------------------------------------------------------------------------------------------------------
-# ENVIRONMENT VARIABLES
-# Define these secrets as environment variables
-# ---------------------------------------------------------------------------------------------------------------------
-
-# AWS_ACCESS_KEY_ID
-# AWS_SECRET_ACCESS_KEY
-# AWS_DEFAULT_REGION
-
 ###########
 # Globals #
 ###########
@@ -84,6 +75,39 @@ variable "load_default_conns" {
   default     = false
 }
 
+variable "ingress_cidr_blocks" {
+  description = "List of IPv4 CIDR ranges to use on all ingress rules"
+  type        = "list"
+  default     = ["0.0.0.0/0"]
+}
+
+variable "ingress_with_cidr_blocks" {
+  description = "List of computed ingress rules to create where 'cidr_blocks' is used"
+  type        = "list"
+  default = [
+    {
+      description = "Airflow webserver"
+      from_port   = 8080
+      to_port     = 8080
+      protocol    = "tcp"
+      cidr_blocks = "0.0.0.0/0"
+    },
+    {
+      description = "Airflow flower"
+      from_port   = 5555
+      to_port     = 5555
+      protocol    = "tcp"
+      cidr_blocks = "0.0.0.0/0"
+    }
+  ]
+}
+
+variable "tags" {
+  description = "Additional tags used into terraform-terraform-labels module."
+  type        = "map"
+  default     = {}
+}
+
 variable "rbac" {
   description = "Enable support for Role-Based Access Control (RBAC)."
   type        = "string"
@@ -143,6 +167,12 @@ variable "azs" {
     "3" = "us-east-1c",
     "4" = "us-east-1d"
   }
+}
+
+variable "instance_subnet_id" {
+  description = "subnet id used for ec2 instances running airflow, if not defined, vpc's first element in subnetlist will be used"
+  type        = "string"
+  default     = ""
 }
 
 variable "webserver_instance_type" {
@@ -231,6 +261,19 @@ variable "db_allocated_storage" {
   description = "Dabatase disk size."
   type        = "string"
   default     = 20
+}
+
+variable "db_subnet_group_name" {
+  description = "db subnet group, if assigned, db will create in that subnet, default create in default vpc"
+  type        = "string"
+  default     = ""
+}
+
+
+variable "associate_public_ips" {
+  description = "Assign public IPs to airflow EC-2 instances, if false machine where terraform is run will need access to the VPC via VPN, tunneling etc."
+  type = "string"
+  default = true
 }
 
 #------------------------------------------------------------

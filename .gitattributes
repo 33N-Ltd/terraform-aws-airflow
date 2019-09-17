@@ -1,0 +1,2 @@
+# Fix CR from checking out on windows ending up in environment variables
+*.env.* eol=lf

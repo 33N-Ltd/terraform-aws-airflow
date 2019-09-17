@@ -1,5 +1,5 @@
 terraform {
-  required_version = "<= 0.11"
+  required_version = ">= 0.12"
 }
 
 # ---------------------------------------
@@ -16,15 +16,18 @@ module "airflow_labels" {
   stage     = "${var.cluster_stage}"
   name      = "airflow"
   delimiter = "-"
+  tags      = "${var.tags}"
 }
 
 module "airflow_labels_scheduler" {
+
   source     = "git::https://github.com/cloudposse/terraform-terraform-label.git?ref=0.2.1"
   namespace  = "${var.cluster_name}"
   stage      = "${var.cluster_stage}"
   name       = "airflow"
   attributes = ["scheduler"]
   delimiter  = "-"
+  tags       = "${var.tags}"
 }
 
 module "airflow_labels_webserver" {
@@ -34,6 +37,7 @@ module "airflow_labels_webserver" {
   name       = "airflow"
   attributes = ["webserver"]
   delimiter  = "-"
+  tags       = "${var.tags}"
 }
 
 module "airflow_labels_worker" {
@@ -43,6 +47,7 @@ module "airflow_labels_worker" {
   name       = "airflow"
   attributes = ["worker"]
   delimiter  = "-"
+  tags       = "${var.tags}"
 }
 
 resource "aws_key_pair" "auth" {
@@ -78,7 +83,7 @@ resource "aws_sqs_queue" "airflow_queue" {
 # ---------------------------------------
 
 module "ami_instance_profile" {
-  source         = "github.com/traveloka/terraform-aws-iam-role.git//modules/instance"
+  source         = "git::https://github.com/traveloka/terraform-aws-iam-role//modules/instance?ref=tags/v1.0.1"
   service_name   = "${module.airflow_labels.namespace}"
   cluster_role   = "${module.airflow_labels.stage}"
   environment    = "${module.airflow_labels.stage}"
@@ -126,28 +131,10 @@ module "sg_airflow" {
   name = "${module.airflow_labels.id}-sg"
   description = "Security group for ${module.airflow_labels.id} machines"
   vpc_id = "${data.aws_vpc.default.id}"
-  ingress_cidr_blocks = ["0.0.0.0/0"]
+  ingress_cidr_blocks = "${var.ingress_cidr_blocks}"
   ingress_rules = ["http-80-tcp", "https-443-tcp", "ssh-tcp"]
-
-  ingress_with_cidr_blocks = [
-    {
-      from_port = 8080
-      to_port = 8080
-      protocol = "tcp"
-      description = "${module.airflow_labels.id} webserver"
-      cidr_blocks = "0.0.0.0/0"
-    },
-    {
-      from_port = 5555
-      to_port = 5555
-      protocol = "tcp"
-      description = "${module.airflow_labels.id} flower"
-      cidr_blocks = "0.0.0.0/0"
-    },
-  ]
-
+  ingress_with_cidr_blocks = "${var.ingress_with_cidr_blocks}"
   egress_rules = ["all-all"]
-
   tags = "${module.airflow_labels.tags}"
 }
 
@@ -161,10 +148,10 @@ resource "aws_instance" "airflow_webserver" {
   ami = "${var.ami}"
   key_name = "${aws_key_pair.auth.id}"
   vpc_security_group_ids = ["${module.sg_airflow.this_security_group_id}"]
-  subnet_id = "${tolist(data.aws_subnet_ids.selected.ids)[count.index]}"
+  subnet_id = coalesce("${var.instance_subnet_id}", "${tolist(data.aws_subnet_ids.selected.ids)[count.index]}")
   iam_instance_profile = "${module.ami_instance_profile.instance_profile_name}"
 
-  associate_public_ip_address = true
+  associate_public_ip_address = "${var.associate_public_ips}"
 
   volume_tags = "${module.airflow_labels_webserver.tags}"
 
@@ -179,7 +166,7 @@ resource "aws_instance" "airflow_webserver" {
     destination = "/tmp/custom_env"
 
     connection {
-      host = "${self.public_ip}"
+      host = "${var.associate_public_ips}" ? "${self.public_ip}" : "${self.private_ip}"
       agent = false
       type = "ssh"
       user = "ubuntu"
@@ -192,7 +179,7 @@ resource "aws_instance" "airflow_webserver" {
     destination = "/tmp/requirements.txt"
 
     connection {
-      host = "${self.public_ip}"
+      host = "${var.associate_public_ips}" ? "${self.public_ip}" : "${self.private_ip}"
       agent = false
       type = "ssh"
       user = "ubuntu"
@@ -205,7 +192,7 @@ resource "aws_instance" "airflow_webserver" {
     destination = "/tmp/airflow_environment"
 
     connection {
-      host = "${self.public_ip}"
+      host = "${var.associate_public_ips}" ? "${self.public_ip}" : "${self.private_ip}"
       agent = false
       type = "ssh"
       user = "ubuntu"
@@ -218,7 +205,7 @@ resource "aws_instance" "airflow_webserver" {
     destination = "/tmp/airflow.service"
 
     connection {
-      host = "${self.public_ip}"
+      host = "${var.associate_public_ips}" ? "${self.public_ip}" : "${self.private_ip}"
       agent = false
       type = "ssh"
       user = "ubuntu"
@@ -232,7 +219,7 @@ resource "aws_instance" "airflow_webserver" {
     ]
 
     connection {
-      host = "${self.public_ip}"
+      host = "${var.associate_public_ips}" ? "${self.public_ip}" : "${self.private_ip}"
       agent = false
       type = "ssh"
       user = "ubuntu"
@@ -255,10 +242,10 @@ resource "aws_instance" "airflow_scheduler" {
   ami = "${var.ami}"
   key_name = "${aws_key_pair.auth.id}"
   vpc_security_group_ids = ["${module.sg_airflow.this_security_group_id}"]
-  subnet_id = "${tolist(data.aws_subnet_ids.selected.ids)[count.index]}"
+  subnet_id = coalesce("${var.instance_subnet_id}", "${tolist(data.aws_subnet_ids.selected.ids)[count.index]}")
   iam_instance_profile = "${module.ami_instance_profile.instance_profile_name}"
 
-  associate_public_ip_address = true
+  associate_public_ip_address = "${var.associate_public_ips}"
 
   volume_tags = "${module.airflow_labels_webserver.tags}"
 
@@ -273,7 +260,7 @@ resource "aws_instance" "airflow_scheduler" {
     destination = "/tmp/custom_env"
 
     connection {
-      host = "${self.public_ip}"
+      host = "${var.associate_public_ips}" ? "${self.public_ip}" : "${self.private_ip}"
       agent = false
       type = "ssh"
       user = "ubuntu"
@@ -286,7 +273,7 @@ resource "aws_instance" "airflow_scheduler" {
     destination = "/tmp/requirements.txt"
 
     connection {
-      host = "${self.public_ip}"
+      host = "${var.associate_public_ips}" ? "${self.public_ip}" : "${self.private_ip}"
       agent = false
       type = "ssh"
       user = "ubuntu"
@@ -299,7 +286,7 @@ resource "aws_instance" "airflow_scheduler" {
     destination = "/tmp/airflow_environment"
 
     connection {
-      host = "${self.public_ip}"
+      host = "${var.associate_public_ips}" ? "${self.public_ip}" : "${self.private_ip}"
       agent = false
       type = "ssh"
       user = "ubuntu"
@@ -312,7 +299,7 @@ resource "aws_instance" "airflow_scheduler" {
     destination = "/tmp/airflow.service"
 
     connection {
-      host = "${self.public_ip}"
+      host = "${var.associate_public_ips}" ? "${self.public_ip}" : "${self.private_ip}"
       agent = false
       type = "ssh"
       user = "ubuntu"
@@ -326,7 +313,7 @@ resource "aws_instance" "airflow_scheduler" {
     ]
 
     connection {
-      host = "${self.public_ip}"
+      host = "${var.associate_public_ips}" ? "${self.public_ip}" : "${self.private_ip}"
       agent = false
       type = "ssh"
       user = "ubuntu"
@@ -349,10 +336,10 @@ resource "aws_instance" "airflow_worker" {
   ami = "${var.ami}"
   key_name = "${aws_key_pair.auth.id}"
   vpc_security_group_ids = ["${module.sg_airflow.this_security_group_id}"]
-  subnet_id = "${tolist(data.aws_subnet_ids.selected.ids)[count.index]}"
+  subnet_id = coalesce("${var.instance_subnet_id}", "${tolist(data.aws_subnet_ids.selected.ids)[count.index]}")
   iam_instance_profile = "${module.ami_instance_profile.instance_profile_name}"
 
-  associate_public_ip_address = true
+  associate_public_ip_address = "${var.associate_public_ips}"
 
   volume_tags = "${module.airflow_labels_webserver.tags}"
 
@@ -367,7 +354,7 @@ resource "aws_instance" "airflow_worker" {
     destination = "/tmp/custom_env"
 
     connection {
-      host = "${self.public_ip}"
+      host = "${var.associate_public_ips}" ? "${self.public_ip}" : "${self.private_ip}"
       agent = false
       type = "ssh"
       user = "ubuntu"
@@ -380,7 +367,7 @@ resource "aws_instance" "airflow_worker" {
     destination = "/tmp/requirements.txt"
 
     connection {
-      host = "${self.public_ip}"
+      host = "${var.associate_public_ips}" ? "${self.public_ip}" : "${self.private_ip}"
       agent = false
       type = "ssh"
       user = "ubuntu"
@@ -393,7 +380,7 @@ resource "aws_instance" "airflow_worker" {
     destination = "/tmp/airflow_environment"
 
     connection {
-      host = "${self.public_ip}"
+      host = "${var.associate_public_ips}" ? "${self.public_ip}" : "${self.private_ip}"
       agent = false
       type = "ssh"
       user = "ubuntu"
@@ -406,7 +393,7 @@ resource "aws_instance" "airflow_worker" {
     destination = "/tmp/airflow.service"
 
     connection {
-      host = "${self.public_ip}"
+      host = "${var.associate_public_ips}" ? "${self.public_ip}" : "${self.private_ip}"
       agent = false
       type = "ssh"
       user = "ubuntu"
@@ -420,7 +407,7 @@ resource "aws_instance" "airflow_worker" {
     ]
 
     connection {
-      host = "${self.public_ip}"
+      host = "${var.associate_public_ips}" ? "${self.public_ip}" : "${self.private_ip}"
       agent = false
       type = "ssh"
       user = "ubuntu"
@@ -450,19 +437,15 @@ module "sg_database" {
   name = "${module.airflow_labels.id}-database-sg"
   description = "Security group for ${module.airflow_labels.id} database"
   vpc_id = "${data.aws_vpc.default.id}"
-
-  ingress_cidr_blocks = ["0.0.0.0/0"]
-
+  ingress_cidr_blocks = "${var.ingress_cidr_blocks}"
   number_of_computed_ingress_with_source_security_group_id = 1
-
   computed_ingress_with_source_security_group_id = [
     {
       rule = "postgresql-tcp"
       source_security_group_id = "${module.sg_airflow.this_security_group_id}"
       description = "Allow ${module.airflow_labels.id} machines"
-    },
+    }
   ]
-
   tags = "${module.airflow_labels.tags}"
 }
 
@@ -483,4 +466,5 @@ resource "aws_db_instance" "airflow_database" {
   skip_final_snapshot = true
   vpc_security_group_ids = ["${module.sg_database.this_security_group_id}"]
   port = "5432"
+  db_subnet_group_name = "${var.db_subnet_group_name}"
 }
