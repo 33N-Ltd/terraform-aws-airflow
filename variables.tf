@@ -280,7 +280,7 @@ variable "rds_storage_encrypted" {
   default = false
 }
 
-variable "aws_kms_key" {
+variable "rds_aws_kms_key" {
   description = "KMS key arn for encryption of RDS storage"
   type = "string"
   default = ""
