@@ -342,7 +342,7 @@ data "template_file" "airflow_environment" {
     DB_DBNAME          = "${var.db_dbname}"
     S3_BUCKET          = "${aws_s3_bucket.airflow_logs.id}"
 
-//    WEBSERVER_HOST     = "${aws_instance.airflow_webserver.private_ip}"
+    # WEBSERVER_HOST     = "${aws_instance.airflow_webserver.public_dns}"
     WEBSERVER_PORT = "${var.webserver_port}"
     QUEUE_NAME     = "${module.airflow_labels.id}-queue"
   }
@@ -368,7 +368,7 @@ data "template_file" "provisioner" {
     DB_DBNAME          = "${var.db_dbname}"
     S3_BUCKET          = "${aws_s3_bucket.airflow_logs.id}"
 
-//    WEBSERVER_HOST     = "${aws_instance.airflow_webserver.private_ip}"
+    # WEBSERVER_HOST     = "${aws_instance.airflow_webserver.public_dns}"
     WEBSERVER_PORT = "${var.webserver_port}"
     QUEUE_NAME     = "${module.airflow_labels.id}-queue"
   }
