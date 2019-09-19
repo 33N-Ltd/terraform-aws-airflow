@@ -457,6 +457,8 @@ resource "aws_db_instance" "airflow_database" {
   username = "${var.db_username}"
   password = "${var.db_password}"
   storage_type = "gp2"
+  storage_encrypted = "${var.rds_storage_encrypted}"
+
   backup_retention_period = 14
   multi_az = false
   publicly_accessible = false

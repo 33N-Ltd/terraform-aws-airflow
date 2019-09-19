@@ -275,6 +275,18 @@ variable "associate_public_ips" {
   default = false
 }
 
+variable "rds_storage_encrypted" {
+  description = "Define whether to encrypt storage for RDS; If true, also define aws_kms_key"
+  default = false
+}
+
+variable "aws_kms_key" {
+  description = "KMS key arn for encryption of RDS storage"
+  type = "string"
+  default = ""
+}
+
+
 #------------------------------------------------------------
 # Data sources
 #------------------------------------------------------------
