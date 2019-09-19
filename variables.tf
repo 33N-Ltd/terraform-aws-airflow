@@ -272,8 +272,7 @@ variable "db_subnet_group_name" {
 
 variable "associate_public_ips" {
   description = "Assign public IPs to airflow EC-2 instances, if false machine where terraform is run will need access to the VPC via VPN, tunneling etc."
-  type = "string"
-  default = true
+  default = false
 }
 
 #------------------------------------------------------------
