@@ -458,7 +458,7 @@ resource "aws_db_instance" "airflow_database" {
   password = "${var.db_password}"
   storage_type = "gp2"
   storage_encrypted = "${var.rds_storage_encrypted}"
-  aws_kms_key = var.rds_aws_kms_key
+  kms_key_id = var.rds_aws_kms_key
 
   backup_retention_period = 14
   multi_az = false
