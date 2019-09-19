@@ -447,6 +447,7 @@ module "sg_database" {
   tags = "${module.airflow_labels.tags}"
 }
 
+
 resource "aws_db_instance" "airflow_database" {
   identifier = "${module.airflow_labels.id}-db"
   allocated_storage = "${var.db_allocated_storage}"
@@ -458,9 +459,9 @@ resource "aws_db_instance" "airflow_database" {
   password = "${var.db_password}"
   storage_type = "gp2"
   storage_encrypted = "${var.rds_storage_encrypted}"
-  kms_key_id = var.rds_aws_kms_key
+  kms_key_id = "${var.rds_aws_kms_key}"
 
-  backup_retention_period = 14
+  backup_retention_period = var.rds_backup_retention
   multi_az = false
   publicly_accessible = false
   apply_immediately = true

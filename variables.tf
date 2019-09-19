@@ -286,6 +286,11 @@ variable "rds_aws_kms_key" {
   default = ""
 }
 
+variable "rds_backup_retention" {
+  description = "Number of days to keep RDS storage backups"
+  type = "string"
+  default = "35"
+}
 
 #------------------------------------------------------------
 # Data sources
