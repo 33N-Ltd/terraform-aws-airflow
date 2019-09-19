@@ -240,7 +240,7 @@ variable "root_volume_delete_on_termination" {
 variable "db_instance_type" {
   description = "Instance type for PostgreSQL database"
   type        = "string"
-  default     = "db.t2.micro"
+  default     = "db.t3.micro"
 }
 
 variable "db_username" {
