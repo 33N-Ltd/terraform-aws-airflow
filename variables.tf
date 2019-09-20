@@ -292,6 +292,21 @@ variable "rds_backup_retention" {
   default = "35"
 }
 
+variable "rds_snap_to_restore" {
+  description = "Specifies whether or not to create this database from a snapshot. This correlates to the snapshot ID you'd find in the RDS console, e.g: rds:production-2015-06-26-06-05."
+  type = "string"
+  default = ""
+}
+variable "rds_final_snap_id" {
+  description = "The name of your final DB snapshot when this DB instance is deleted."
+  default = ""
+}
+variable "rds_skip_final_snap" {
+  description = "Determines whether a final DB snapshot is created before the DB instance is deleted."
+  type = bool
+  default = false
+}
+
 #------------------------------------------------------------
 # Data sources
 #------------------------------------------------------------

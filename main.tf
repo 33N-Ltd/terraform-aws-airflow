@@ -465,7 +465,9 @@ resource "aws_db_instance" "airflow_database" {
   multi_az = false
   publicly_accessible = false
   apply_immediately = true
-  skip_final_snapshot = true
+  skip_final_snapshot = var.rds_skip_final_snap
+  final_snapshot_identifier = var.rds_final_snap_id
+  snapshot_identifier = var.rds_snap_to_restore
   vpc_security_group_ids = ["${module.sg_database.this_security_group_id}"]
   port = "5432"
   db_subnet_group_name = "${var.db_subnet_group_name}"
