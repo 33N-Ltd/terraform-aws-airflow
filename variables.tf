@@ -299,6 +299,7 @@ variable "rds_snap_to_restore" {
 }
 variable "rds_final_snap_id" {
   description = "The name of your final DB snapshot when this DB instance is deleted."
+  type = "string"
   default = ""
 }
 variable "rds_skip_final_snap" {
