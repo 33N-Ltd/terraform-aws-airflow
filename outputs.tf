@@ -29,5 +29,5 @@ output "database_username" {
 }
 
 output "webserver_private_ip" {
-  value = "${aws_instance.airflow_webserver.private_ip}"
+  value = "${aws_instance.airflow_webserver.*.private_ip}"
 }
