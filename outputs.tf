@@ -27,3 +27,7 @@ output "database_username" {
   description = "Username to connect to RDS metadata DB"
   value       = "${aws_db_instance.airflow_database.username}"
 }
+
+output "webserver_private_ip" {
+  value = "${aws_instance.airflow_webserver.private_ip}"
+}
