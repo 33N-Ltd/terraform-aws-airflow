@@ -447,6 +447,7 @@ module "sg_database" {
   tags = "${module.airflow_labels.tags}"
 }
 
+
 resource "aws_db_instance" "airflow_database" {
   identifier = "${module.airflow_labels.id}-db"
   allocated_storage = "${var.db_allocated_storage}"
@@ -457,11 +458,16 @@ resource "aws_db_instance" "airflow_database" {
   username = "${var.db_username}"
   password = "${var.db_password}"
   storage_type = "gp2"
-  backup_retention_period = 14
+  storage_encrypted = "${var.rds_storage_encrypted}"
+  kms_key_id = "${var.rds_aws_kms_key}"
+
+  backup_retention_period = var.rds_backup_retention
   multi_az = false
   publicly_accessible = false
   apply_immediately = true
-  skip_final_snapshot = true
+  skip_final_snapshot = var.rds_skip_final_snap
+  final_snapshot_identifier = var.rds_final_snap_id
+  snapshot_identifier = var.rds_snap_to_restore
   vpc_security_group_ids = ["${module.sg_database.this_security_group_id}"]
   port = "5432"
   db_subnet_group_name = "${var.db_subnet_group_name}"

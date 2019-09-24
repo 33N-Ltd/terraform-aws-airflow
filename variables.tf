@@ -240,7 +240,7 @@ variable "root_volume_delete_on_termination" {
 variable "db_instance_type" {
   description = "Instance type for PostgreSQL database"
   type        = "string"
-  default     = "db.t2.micro"
+  default     = "db.t3.micro"
 }
 
 variable "db_username" {
@@ -272,6 +272,39 @@ variable "db_subnet_group_name" {
 
 variable "associate_public_ips" {
   description = "Assign public IPs to airflow EC-2 instances, if false machine where terraform is run will need access to the VPC via VPN, tunneling etc."
+  default = false
+}
+
+variable "rds_storage_encrypted" {
+  description = "Define whether to encrypt storage for RDS; If true, also define aws_kms_key"
+  default = false
+}
+
+variable "rds_aws_kms_key" {
+  description = "KMS key arn for encryption of RDS storage"
+  type = "string"
+  default = ""
+}
+
+variable "rds_backup_retention" {
+  description = "Number of days to keep RDS storage backups"
+  type = "string"
+  default = "35"
+}
+
+variable "rds_snap_to_restore" {
+  description = "Specifies whether or not to create this database from a snapshot. This correlates to the snapshot ID you'd find in the RDS console, e.g: rds:production-2015-06-26-06-05."
+  type = "string"
+  default = ""
+}
+variable "rds_final_snap_id" {
+  description = "The name of your final DB snapshot when this DB instance is deleted."
+  type = "string"
+  default = ""
+}
+variable "rds_skip_final_snap" {
+  description = "Determines whether a final DB snapshot is created before the DB instance is deleted."
+  type = bool
   default = false
 }
 
