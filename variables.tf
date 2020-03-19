@@ -308,6 +308,30 @@ variable "rds_skip_final_snap" {
   default = false
 }
 
+variable "deletion_protection" {
+  type        = bool
+  default     = false
+  description = "If the DB instance should have deletion protection enabled. The database can't be deleted when this value is set to true. The default is false."
+}
+
+variable "multi_az" {
+  type        = bool
+  default     = false
+  description = "Specifies if the RDS instance is multi-AZ"
+}
+
+variable "publicly_accessible" {
+  type        = bool
+  default     = false
+  description = "Bool to control if instance is publicly accessible. Default is false."
+}
+
+variable "apply_immediately" {
+  type        = bool
+  default     = true
+  description = "Specifies whether any database modifications are applied immediately, or during the next maintenance window. Default is false."
+}
+
 #------------------------------------------------------------
 # Data sources
 #------------------------------------------------------------
