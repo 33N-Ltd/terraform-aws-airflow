@@ -1,5 +1,5 @@
 terraform {
-  required_version = ">= 0.12"
+required_version = ">= 0.12"
 }
 
 # ---------------------------------------
@@ -12,46 +12,46 @@ terraform {
 
 module "airflow_labels" {
   source    = "git::https://github.com/cloudposse/terraform-terraform-label.git?ref=tags/0.4.0"
-  namespace = "${var.cluster_name}"
-  stage     = "${var.cluster_stage}"
+  namespace = var.cluster_name
+  stage     = var.cluster_stage
   name      = "airflow"
   delimiter = "-"
-  tags      = "${var.tags}"
+  tags      = var.tags
 }
 
 module "airflow_labels_scheduler" {
   source     = "git::https://github.com/cloudposse/terraform-terraform-label.git?ref=tags/0.4.0"
-  namespace  = "${var.cluster_name}"
-  stage      = "${var.cluster_stage}"
+  namespace  = var.cluster_name
+  stage      = var.cluster_stage
   name       = "airflow"
   attributes = ["scheduler"]
   delimiter  = "-"
-  tags       = "${var.tags}"
+  tags       = var.tags
 }
 
 module "airflow_labels_webserver" {
   source     = "git::https://github.com/cloudposse/terraform-terraform-label.git?ref=tags/0.4.0"
-  namespace  = "${var.cluster_name}"
-  stage      = "${var.cluster_stage}"
+  namespace  = var.cluster_name
+  stage      = var.cluster_stage
   name       = "airflow"
   attributes = ["webserver"]
   delimiter  = "-"
-  tags       = "${var.tags}"
+  tags       = var.tags
 }
 
 module "airflow_labels_worker" {
   source     = "git::https://github.com/cloudposse/terraform-terraform-label.git?ref=tags/0.4.0"
-  namespace  = "${var.cluster_name}"
-  stage      = "${var.cluster_stage}"
+  namespace  = var.cluster_name
+  stage      = var.cluster_stage
   name       = "airflow"
   attributes = ["worker"]
   delimiter  = "-"
-  tags       = "${var.tags}"
+  tags       = var.tags
 }
 
 resource "aws_key_pair" "auth" {
-  key_name   = "${var.key_name != "" ? var.key_name : module.airflow_labels.id}"
-  public_key = "${file(var.public_key_path)}"
+  key_name   = var.key_name != "" ? var.key_name : module.airflow_labels.id
+  public_key = file(var.public_key_path)
 }
 
 # -------------------------------------------
@@ -63,7 +63,7 @@ resource "aws_s3_bucket" "airflow_logs" {
   acl           = "private"
   force_destroy = true
 
-  tags = "${module.airflow_labels.tags}"
+  tags = module.airflow_labels.tags
 }
 
 # ---------------------------------------
@@ -74,7 +74,7 @@ resource "aws_sqs_queue" "airflow_queue" {
   name             = "${module.airflow_labels.id}-queue"
   max_message_size = 262144
 
-  tags = "${module.airflow_labels.tags}"
+  tags = module.airflow_labels.tags
 }
 
 # ---------------------------------------
@@ -83,25 +83,25 @@ resource "aws_sqs_queue" "airflow_queue" {
 
 module "ami_instance_profile" {
   source         = "git::https://github.com/traveloka/terraform-aws-iam-role//modules/instance?ref=tags/v1.0.1"
-  service_name   = "${module.airflow_labels.namespace}"
-  cluster_role   = "${module.airflow_labels.stage}"
-  environment    = "${module.airflow_labels.stage}"
-  product_domain = "${module.airflow_labels.stage}"
-  role_tags      = "${module.airflow_labels.tags}"
+  service_name   = module.airflow_labels.namespace
+  cluster_role   = module.airflow_labels.stage
+  environment    = module.airflow_labels.stage
+  product_domain = module.airflow_labels.stage
+  role_tags      = module.airflow_labels.tags
 }
 
 resource "aws_iam_role_policy_attachment" "s3_policy" {
-  role       = "${module.ami_instance_profile.role_name}"
+  role       = module.ami_instance_profile.role_name
   policy_arn = "arn:aws:iam::aws:policy/AmazonS3FullAccess"
 }
 
 resource "aws_iam_role_policy_attachment" "sqs_policy" {
-  role       = "${module.ami_instance_profile.role_name}"
+  role       = module.ami_instance_profile.role_name
   policy_arn = "arn:aws:iam::aws:policy/AmazonSQSFullAccess"
 }
 
 resource "aws_sqs_queue_policy" "sqs_permission" {
-  queue_url = "${aws_sqs_queue.airflow_queue.id}"
+  queue_url = aws_sqs_queue.airflow_queue.id
 
   policy = <<POLICY
 {
@@ -118,6 +118,7 @@ resource "aws_sqs_queue_policy" "sqs_permission" {
   ]
 }
 POLICY
+
 }
 
 # ----------------------------------------------------------------------------------------
@@ -125,16 +126,16 @@ POLICY
 # ----------------------------------------------------------------------------------------
 
 module "sg_airflow" {
-  source = "terraform-aws-modules/security-group/aws"
-  version = "3.1.0"
-  name = "${module.airflow_labels.id}-sg"
-  description = "Security group for ${module.airflow_labels.id} machines"
-  vpc_id = "${data.aws_vpc.default.id}"
-  ingress_cidr_blocks = "${var.ingress_cidr_blocks}"
-  ingress_rules = ["http-80-tcp", "https-443-tcp", "ssh-tcp"]
-  ingress_with_cidr_blocks = "${var.ingress_with_cidr_blocks}"
-  egress_rules = ["all-all"]
-  tags = "${module.airflow_labels.tags}"
+  source                   = "terraform-aws-modules/security-group/aws"
+  version                  = "3.1.0"
+  name                     = "${module.airflow_labels.id}-sg"
+  description              = "Security group for ${module.airflow_labels.id} machines"
+  vpc_id                   = data.aws_vpc.default.id
+  ingress_cidr_blocks      = var.ingress_cidr_blocks
+  ingress_rules            = ["http-80-tcp", "https-443-tcp", "ssh-tcp"]
+  ingress_with_cidr_blocks = var.ingress_with_cidr_blocks
+  egress_rules             = ["all-all"]
+  tags                     = module.airflow_labels.tags
 }
 
 #-------------------------------------------------------------------------
@@ -143,72 +144,74 @@ module "sg_airflow" {
 resource "aws_instance" "airflow_webserver" {
   count = 1
 
-  instance_type = "${var.webserver_instance_type}"
-  ami = "${var.ami}"
-  key_name = "${aws_key_pair.auth.id}"
-  vpc_security_group_ids = ["${module.sg_airflow.this_security_group_id}"]
-  subnet_id = coalesce("${var.instance_subnet_id}", "${tolist(data.aws_subnet_ids.selected.ids)[count.index]}")
-  iam_instance_profile = "${module.ami_instance_profile.instance_profile_name}"
+  instance_type = var.webserver_instance_type
+  ami           = var.ami
+  key_name      = aws_key_pair.auth.id
+  vpc_security_group_ids = [module.sg_airflow.this_security_group_id]
 
-  associate_public_ip_address = "${var.associate_public_ips}"
+  subnet_id = coalesce(var.instance_subnet_id, tolist(data.aws_subnet_ids.selected.ids)[count.index])
+  //subnet_id = coalesce("${var.instance_subnet_id}", "${tolist(data.aws_subnet_ids.selected.ids)[count.index]}")
+  iam_instance_profile = module.ami_instance_profile.instance_profile_name
 
-  volume_tags = "${module.airflow_labels_webserver.tags}"
+  associate_public_ip_address = var.associate_public_ips
+
+  volume_tags = module.airflow_labels_webserver.tags
 
   root_block_device {
-    volume_type = "${var.root_volume_type}"
-    volume_size = "${var.root_volume_size}"
-    delete_on_termination = "${var.root_volume_delete_on_termination}"
+    volume_type           = var.root_volume_type
+    volume_size           = var.root_volume_size
+    delete_on_termination = var.root_volume_delete_on_termination
   }
 
   provisioner "file" {
-    content = "${data.template_file.custom_env.rendered}"
+    content     = data.template_file.custom_env.rendered
     destination = "/tmp/custom_env"
 
     connection {
       host = "${var.associate_public_ips}" ? "${self.public_ip}" : "${self.private_ip}"
-      agent = false
-      type = "ssh"
-      user = "ubuntu"
-      private_key = "${file(var.private_key_path)}"
+      agent       = false
+      type        = "ssh"
+      user        = "ubuntu"
+      private_key = file(var.private_key_path)
     }
   }
 
   provisioner "file" {
-    content = "${data.template_file.custom_requirements.rendered}"
+    content     = data.template_file.custom_requirements.rendered
     destination = "/tmp/requirements.txt"
 
     connection {
       host = "${var.associate_public_ips}" ? "${self.public_ip}" : "${self.private_ip}"
-      agent = false
-      type = "ssh"
-      user = "ubuntu"
-      private_key = "${file(var.private_key_path)}"
+      agent       = false
+      type        = "ssh"
+      user        = "ubuntu"
+      private_key = file(var.private_key_path)
     }
   }
 
   provisioner "file" {
-    content = "${data.template_file.airflow_environment.rendered}"
+    content     = data.template_file.airflow_environment.rendered
     destination = "/tmp/airflow_environment"
 
     connection {
       host = "${var.associate_public_ips}" ? "${self.public_ip}" : "${self.private_ip}"
-      agent = false
-      type = "ssh"
-      user = "ubuntu"
-      private_key = "${file(var.private_key_path)}"
+      agent       = false
+      type        = "ssh"
+      user        = "ubuntu"
+      private_key = file(var.private_key_path)
     }
   }
 
   provisioner "file" {
-    content = "${data.template_file.airflow_service.rendered}"
+    content     = data.template_file.airflow_service.rendered
     destination = "/tmp/airflow.service"
 
     connection {
       host = "${var.associate_public_ips}" ? "${self.public_ip}" : "${self.private_ip}"
-      agent = false
-      type = "ssh"
-      user = "ubuntu"
-      private_key = "${file(var.private_key_path)}"
+      agent       = false
+      type        = "ssh"
+      user        = "ubuntu"
+      private_key = file(var.private_key_path)
     }
   }
 
@@ -219,15 +222,15 @@ resource "aws_instance" "airflow_webserver" {
 
     connection {
       host = "${var.associate_public_ips}" ? "${self.public_ip}" : "${self.private_ip}"
-      agent = false
-      type = "ssh"
-      user = "ubuntu"
-      private_key = "${file(var.private_key_path)}"
+      agent       = false
+      type        = "ssh"
+      user        = "ubuntu"
+      private_key = file(var.private_key_path)
     }
   }
 
-  user_data = "${data.template_file.provisioner.rendered}"
-  tags = "${module.airflow_labels_webserver.tags}"
+  user_data = data.template_file.provisioner.rendered
+  tags      = module.airflow_labels_webserver.tags
 
   lifecycle {
     create_before_destroy = true
@@ -237,72 +240,74 @@ resource "aws_instance" "airflow_webserver" {
 resource "aws_instance" "airflow_scheduler" {
   count = 1
 
-  instance_type = "${var.scheduler_instance_type}"
-  ami = "${var.ami}"
-  key_name = "${aws_key_pair.auth.id}"
-  vpc_security_group_ids = ["${module.sg_airflow.this_security_group_id}"]
-  subnet_id = coalesce("${var.instance_subnet_id}", "${tolist(data.aws_subnet_ids.selected.ids)[count.index]}")
-  iam_instance_profile = "${module.ami_instance_profile.instance_profile_name}"
+  instance_type = var.scheduler_instance_type
+  ami           = var.ami
+  key_name      = aws_key_pair.auth.id
+  vpc_security_group_ids = [module.sg_airflow.this_security_group_id]
 
-  associate_public_ip_address = "${var.associate_public_ips}"
+  subnet_id = coalesce(var.instance_subnet_id, tolist(data.aws_subnet_ids.selected.ids)[count.index])
+  //subnet_id = coalesce("${var.instance_subnet_id}", "${tolist(data.aws_subnet_ids.selected.ids)[count.index]}")
+  iam_instance_profile = module.ami_instance_profile.instance_profile_name
 
-  volume_tags = "${module.airflow_labels_webserver.tags}"
+  associate_public_ip_address = var.associate_public_ips
+
+  volume_tags = module.airflow_labels_webserver.tags
 
   root_block_device {
-    volume_type = "${var.root_volume_type}"
-    volume_size = "${var.root_volume_size}"
-    delete_on_termination = "${var.root_volume_delete_on_termination}"
+    volume_type           = var.root_volume_type
+    volume_size           = var.root_volume_size
+    delete_on_termination = var.root_volume_delete_on_termination
   }
 
   provisioner "file" {
-    content = "${data.template_file.custom_env.rendered}"
+    content     = data.template_file.custom_env.rendered
     destination = "/tmp/custom_env"
 
     connection {
       host = "${var.associate_public_ips}" ? "${self.public_ip}" : "${self.private_ip}"
-      agent = false
-      type = "ssh"
-      user = "ubuntu"
-      private_key = "${file(var.private_key_path)}"
+      agent       = false
+      type        = "ssh"
+      user        = "ubuntu"
+      private_key = file(var.private_key_path)
     }
   }
 
   provisioner "file" {
-    content = "${data.template_file.custom_requirements.rendered}"
+    content     = data.template_file.custom_requirements.rendered
     destination = "/tmp/requirements.txt"
 
     connection {
       host = "${var.associate_public_ips}" ? "${self.public_ip}" : "${self.private_ip}"
-      agent = false
-      type = "ssh"
-      user = "ubuntu"
-      private_key = "${file(var.private_key_path)}"
+      agent       = false
+      type        = "ssh"
+      user        = "ubuntu"
+      private_key = file(var.private_key_path)
     }
   }
 
   provisioner "file" {
-    content = "${data.template_file.airflow_environment.rendered}"
+    content     = data.template_file.airflow_environment.rendered
     destination = "/tmp/airflow_environment"
 
     connection {
       host = "${var.associate_public_ips}" ? "${self.public_ip}" : "${self.private_ip}"
-      agent = false
-      type = "ssh"
-      user = "ubuntu"
-      private_key = "${file(var.private_key_path)}"
+      agent       = false
+      type        = "ssh"
+      user        = "ubuntu"
+      private_key = file(var.private_key_path)
     }
   }
 
   provisioner "file" {
-    content = "${data.template_file.airflow_service.rendered}"
+    content     = data.template_file.airflow_service.rendered
     destination = "/tmp/airflow.service"
 
     connection {
       host = "${var.associate_public_ips}" ? "${self.public_ip}" : "${self.private_ip}"
-      agent = false
-      type = "ssh"
-      user = "ubuntu"
-      private_key = "${file(var.private_key_path)}"
+      agent       = false
+      type        = "ssh"
+      user        = "ubuntu"
+      private_key = file(var.private_key_path)
     }
   }
 
@@ -313,15 +318,15 @@ resource "aws_instance" "airflow_scheduler" {
 
     connection {
       host = "${var.associate_public_ips}" ? "${self.public_ip}" : "${self.private_ip}"
-      agent = false
-      type = "ssh"
-      user = "ubuntu"
-      private_key = "${file(var.private_key_path)}"
+      agent       = false
+      type        = "ssh"
+      user        = "ubuntu"
+      private_key = file(var.private_key_path)
     }
   }
 
-  user_data = "${data.template_file.provisioner.rendered}"
-  tags = "${module.airflow_labels_scheduler.tags}"
+  user_data = data.template_file.provisioner.rendered
+  tags      = module.airflow_labels_scheduler.tags
 
   lifecycle {
     create_before_destroy = true
@@ -329,74 +334,76 @@ resource "aws_instance" "airflow_scheduler" {
 }
 
 resource "aws_instance" "airflow_worker" {
-  count = "${var.worker_instance_count}"
+  count = var.worker_instance_count
 
-  instance_type = "${var.worker_instance_type}"
-  ami = "${var.ami}"
-  key_name = "${aws_key_pair.auth.id}"
-  vpc_security_group_ids = ["${module.sg_airflow.this_security_group_id}"]
-  subnet_id = coalesce("${var.instance_subnet_id}", "${tolist(data.aws_subnet_ids.selected.ids)[count.index]}")
-  iam_instance_profile = "${module.ami_instance_profile.instance_profile_name}"
+  instance_type = var.worker_instance_type
+  ami           = var.ami
+  key_name      = aws_key_pair.auth.id
+  vpc_security_group_ids = [module.sg_airflow.this_security_group_id]
 
-  associate_public_ip_address = "${var.associate_public_ips}"
+  subnet_id = coalesce(var.instance_subnet_id, tolist(data.aws_subnet_ids.selected.ids)[count.index])
+  //subnet_id = coalesce("${var.instance_subnet_id}", "${tolist(data.aws_subnet_ids.selected.ids)[count.index]}")
+  iam_instance_profile = module.ami_instance_profile.instance_profile_name
 
-  volume_tags = "${module.airflow_labels_webserver.tags}"
+  associate_public_ip_address = var.associate_public_ips
+
+  volume_tags = module.airflow_labels_webserver.tags
 
   root_block_device {
-    volume_type = "${var.root_volume_type}"
-    volume_size = "${var.root_volume_size}"
-    delete_on_termination = "${var.root_volume_delete_on_termination}"
+    volume_type           = var.root_volume_type
+    volume_size           = var.root_volume_size
+    delete_on_termination = var.root_volume_delete_on_termination
   }
 
   provisioner "file" {
-    content = "${data.template_file.custom_env.rendered}"
+    content     = data.template_file.custom_env.rendered
     destination = "/tmp/custom_env"
 
     connection {
       host = "${var.associate_public_ips}" ? "${self.public_ip}" : "${self.private_ip}"
-      agent = false
-      type = "ssh"
-      user = "ubuntu"
-      private_key = "${file(var.private_key_path)}"
+      agent       = false
+      type        = "ssh"
+      user        = "ubuntu"
+      private_key = file(var.private_key_path)
     }
   }
 
   provisioner "file" {
-    content = "${data.template_file.custom_requirements.rendered}"
+    content     = data.template_file.custom_requirements.rendered
     destination = "/tmp/requirements.txt"
 
     connection {
       host = "${var.associate_public_ips}" ? "${self.public_ip}" : "${self.private_ip}"
-      agent = false
-      type = "ssh"
-      user = "ubuntu"
-      private_key = "${file(var.private_key_path)}"
+      agent       = false
+      type        = "ssh"
+      user        = "ubuntu"
+      private_key = file(var.private_key_path)
     }
   }
 
   provisioner "file" {
-    content = "${data.template_file.airflow_environment.rendered}"
+    content     = data.template_file.airflow_environment.rendered
     destination = "/tmp/airflow_environment"
 
     connection {
       host = "${var.associate_public_ips}" ? "${self.public_ip}" : "${self.private_ip}"
-      agent = false
-      type = "ssh"
-      user = "ubuntu"
-      private_key = "${file(var.private_key_path)}"
+      agent       = false
+      type        = "ssh"
+      user        = "ubuntu"
+      private_key = file(var.private_key_path)
     }
   }
 
   provisioner "file" {
-    content = "${data.template_file.airflow_service.rendered}"
+    content     = data.template_file.airflow_service.rendered
     destination = "/tmp/airflow.service"
 
     connection {
       host = "${var.associate_public_ips}" ? "${self.public_ip}" : "${self.private_ip}"
-      agent = false
-      type = "ssh"
-      user = "ubuntu"
-      private_key = "${file(var.private_key_path)}"
+      agent       = false
+      type        = "ssh"
+      user        = "ubuntu"
+      private_key = file(var.private_key_path)
     }
   }
 
@@ -407,15 +414,15 @@ resource "aws_instance" "airflow_worker" {
 
     connection {
       host = "${var.associate_public_ips}" ? "${self.public_ip}" : "${self.private_ip}"
-      agent = false
-      type = "ssh"
-      user = "ubuntu"
-      private_key = "${file(var.private_key_path)}"
+      agent       = false
+      type        = "ssh"
+      user        = "ubuntu"
+      private_key = file(var.private_key_path)
     }
   }
 
-  user_data = "${data.template_file.provisioner.rendered}"
-  tags = "${module.airflow_labels_worker.tags}"
+  user_data = data.template_file.provisioner.rendered
+  tags      = module.airflow_labels_worker.tags
 
   lifecycle {
     create_before_destroy = true
@@ -431,44 +438,45 @@ resource "aws_instance" "airflow_worker" {
 # -------------------------------------------------------------------------
 
 module "sg_database" {
-  source = "terraform-aws-modules/security-group/aws"
-  name = "${module.airflow_labels.id}-database-sg"
-  description = "Security group for ${module.airflow_labels.id} database"
-  vpc_id = "${data.aws_vpc.default.id}"
-  ingress_cidr_blocks = "${var.ingress_cidr_blocks}"
+  source                                                   = "terraform-aws-modules/security-group/aws"
+  name                                                     = "${module.airflow_labels.id}-database-sg"
+  description                                              = "Security group for ${module.airflow_labels.id} database"
+  vpc_id                                                   = data.aws_vpc.default.id
+  ingress_cidr_blocks                                      = var.ingress_cidr_blocks
   number_of_computed_ingress_with_source_security_group_id = 1
   computed_ingress_with_source_security_group_id = [
     {
-      rule = "postgresql-tcp"
-      source_security_group_id = "${module.sg_airflow.this_security_group_id}"
-      description = "Allow ${module.airflow_labels.id} machines"
-    }
+      rule                     = "postgresql-tcp"
+      source_security_group_id = module.sg_airflow.this_security_group_id
+      description              = "Allow ${module.airflow_labels.id} machines"
+    },
   ]
-  tags = "${module.airflow_labels.tags}"
+  tags = module.airflow_labels.tags
 }
 
-
 resource "aws_db_instance" "airflow_database" {
-  identifier = "${module.airflow_labels.id}-db"
-  allocated_storage = "${var.db_allocated_storage}"
-  engine = "postgres"
-  engine_version = "11.1"
-  instance_class = "${var.db_instance_type}"
-  name = "${var.db_dbname}"
-  username = "${var.db_username}"
-  password = "${var.db_password}"
-  storage_type = "gp2"
-  storage_encrypted = "${var.rds_storage_encrypted}"
-  kms_key_id = "${var.rds_aws_kms_key}"
+  identifier        = "${module.airflow_labels.id}-db"
+  allocated_storage = var.db_allocated_storage
+  engine            = "postgres"
+  engine_version    = "11.1"
+  instance_class    = var.db_instance_type
+  name              = var.db_dbname
+  username          = var.db_username
+  password          = var.db_password
+  storage_type      = "gp2"
+  storage_encrypted = var.rds_storage_encrypted
+  kms_key_id        = var.rds_aws_kms_key
 
   backup_retention_period = var.rds_backup_retention
-  multi_az = false
+  multi_az            = false
   publicly_accessible = false
-  apply_immediately = true
+  apply_immediately   = true
+
   skip_final_snapshot = var.rds_skip_final_snap
   final_snapshot_identifier = var.rds_final_snap_id
   snapshot_identifier = var.rds_snap_to_restore
-  vpc_security_group_ids = ["${module.sg_database.this_security_group_id}"]
-  port = "5432"
-  db_subnet_group_name = "${var.db_subnet_group_name}"
+  vpc_security_group_ids = [module.sg_database.this_security_group_id]
+  port                   = "5432"
+  db_subnet_group_name   = var.db_subnet_group_name
 }
+
